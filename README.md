@@ -1,40 +1,53 @@
 # Exam
+ 
 
-Para realizar el proyecto necesitaremos Instalar Redis:
-Redis (versión 5.0.6)
+To carry out the project we will need to install Redis:
+Redis (5.0.6)
+```
 $ wget http://download.redis.io/releases/redis-5.0.7.tar.gz
 $ tar xzf redis-5.0.6.tar.gz
 $ cd redis-5.0.6
 $ make
+```
 
-De igual manera Instalamos Python Virtual Env y Dependencias    
-Creamos un directorio llamado image_parroter
+
+In the same way we install Python Virtual Env and Dependencies
+We create a directory called image_parroter
+
+```
 $ mkdir image_parroter
 $ cd image_parroter
 $ python3 -m venv venv 
 $ source venv/bin/activate
+```
 
-Instalamos Django, Celery , Pillow, django-widget-tweaks
+We install Django, Celery, Pillow, django-widget-tweaks
+
+```
 (venv) $ pip3 install Django Celery redis Pillow django-widget-tweaks
 (venv) $ pip3 freeze > requirements.txt
+```
 
-Configuración del proyecto Django
-Creamos un proyecto llamado image_parroter y una vez dentro del proyecto crearemos una app de Django llamada thumbnailer
+Django project configuration
+We create a project called image_parroter and once inside the project we will create a Django app called thumbnailer
 
+```
 (venv) $ django-admin startproject image_parroter
 (venv) $ cd image_parroter
 (venv) $ python manage.py startapp thumbnailer
+```
 
-Vemos la estructura de nuestro proyecto
+We see the structure of our project
+```
 $ tree -I venv
+```
 
+Inside image_parroter / image_parroter / image_parroter we will create a celery.py documents
+to integrate Celery into the project
 
+### image_parroter/image_parroter/image_parroter/celery.py
 
-Dentro de image_parroter/image_parroter/image_parroter crearemos un documentos celery.py
-para poder integrar Celery a el proyecto
-
-# image_parroter/image_parroter/image_parroter/celery.py
-
+```
 import os
 from celery import Celery
 
@@ -43,11 +56,12 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'image_parroter.settings')
 celery_app = Celery('image_parroter')
 celery_app.config_from_object('django.conf:settings', namespace='CELERY')
 celery_app.autodiscover_tasks()
+```
  
-Dentro de nuestro archivo settings.py agregaremos el siguiente codigo en la parte inferior.
- 
-# image_parroter/image_parroter/image_parroter/settings.py
- 
+Within our settings.py file we will add the following code at the bottom.
+
+### image_parroter/image_parroter/image_parroter/settings.py
+``` 
 ... skipping to the bottom
  
 # celery
@@ -56,29 +70,33 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
+ ```
  
  
  
- 
-Importaremos celery desde nuestro script principal __init__.py
-# image_parroter/image_parroter/image_parroter/__init__.py
- 
+We will import celery from our main script __init__.py
+
+### image_parroter/image_parroter/image_parroter/__init__.py
+``` 
 from .celery import celery_app
 __all__ = ('celery_app',)
+ ```
+Inside the thumbnailer application we will create a module called task.py where we will import shared_tasks and define the function adding_task
  
-Dentro de la aplicacion thumbnailer crearemos un modulo llamado task.py donde importaremos shared_tasks y definiremos la funcion adding_task
+### image_parroter/image_parroter/thumbnailer/tasks.py
  
-# image_parroter/image_parroter/thumbnailer/tasks.py
- 
+ ```
 from celery import shared_task
  
 @shared_task
 def adding_task(x, y):
     return x + y
-Volvemos a modificar nuestro modulo settings.py en la seccion de INSTALLED_APPS
+```
+We modify our settings.py module again in the INSTALLED_APPS section
  
-# image_parroter/image_parroter/image_parroter/settings.py
+### image_parroter/image_parroter/image_parroter/settings.py
  
+```
 ... skipping to the INSTALLED_APPS
  
 INSTALLED_APPS = [
@@ -91,10 +109,14 @@ INSTALLED_APPS = [
     'thumbnailer.apps.ThumbnailerConfig',
     'widget_tweaks',
 ]
- 
-Corremos nuestro servidor de redis dentro de la primer carpeta de image_parroter
+```
+
+We run our redis server inside the first image_parroter folder
+
+```
 $ redis-server
- 
+```
+```
 48621:C 21 May 21:55:23.706 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
 48621:C 21 May 21:55:23.707 # Redis version=4.0.8, bits=64, commit=00000000, modified=0, pid=48621, just started
 48621:C 21 May 21:55:23.707 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
@@ -119,16 +141,18 @@ $ redis-server
  
 48621:M 21 May 21:55:23.712 # Server initialized
 48621:M 21 May 21:55:23.712 * Ready to accept connections
+```
  
- 
-En caso de mostrar un error de puerto ya se encuentra en uso, dentendremos el servidor de redis y lo volveremos a ejecutar
- 
+In case of showing a port error it is already in use, we will stop the redis server and execute it again
+
+```
 $ sudo systemctl stop redis
 $ redis-server
+```
  
- 
-Abrimos una segunda terminal
- 
+We open a second terminal
+
+```
 $ cd image_parroter
 $ source venv/bin/activate
 (venv) $ celery worker -A image_parroter --loglevel=info
@@ -149,8 +173,11 @@ $ source venv/bin/activate
                 
 [tasks]
   . thumbnailer.tasks.adding_task
- 
-Abriremos una tercer terminal para inicial el shell de Django Python y probar adding_task
+```
+
+We will open a third terminal to initial the Django Python shell and try adding_task
+
+```
 $ cd image_parroter
 $ source venv/bin/activate
 (venv) $ python manage.py shell
@@ -161,17 +188,13 @@ Python 3.6.6 |Anaconda, Inc.| (default, Jun 28 2018, 11:07:29)
 id=86167f65-1256-497e-b5d9-0819f24e95bc, state=SUCCESS, status=SUCCESS
 >>> task.get()
 7
+``` 
  
+Create thumbnails of images within a celery task
+Returning to our task.py module we will import the Image class from the PIL package and add a new task called make_thumbnails that accepts the path of our image and a list of width and height dimensions of 2 tuples to create thumbnails.
  
- 
- 
- 
- 
- 
-Crear miniaturas de imágenes dentro de una tarea de apio
-Regresando a nuestro modulo task.py importaremos la clase Image del paquete PIL y agregaremos una nueva tarea llamada make_thumbnails que acepta la ruta de nuestra imagen y una lista de dimensiones de ancho y alto de 2 tuplas para crear miniaturas.
- 
-# image_parroter/image_parroter/thumbnailer/tasks.py
+### image_parroter/image_parroter/thumbnailer/tasks.py
+```
 import os
 from zipfile import ZipFile
  
@@ -208,18 +231,13 @@ def make_thumbnails(file_path, thumbnails=[]):
  
     return results
  
+```
  
- 
- 
- 
- 
- 
- 
- 
-Entramos al modulo settings.py para agregar los MEDIA_ROOT, MEDIA_URL, IMAGES_DIR
- 
-# image_parroter/image_parroter/settings.py
- 
+We enter the settings.py module to add the MEDIA_ROOT, MEDIA_URL, IMAGES_DIR
+
+### image_parroter/image_parroter/settings.py
+
+```
 ... skipping down to the static files section
  
 # Static files (CSS, JavaScript, Images)
@@ -233,12 +251,12 @@ IMAGES_DIR = os.path.join(MEDIA_ROOT, 'images')
  
 if not os.path.exists(MEDIA_ROOT) or not os.path.exists(IMAGES_DIR):
     os.makedirs(IMAGES_DIR)
+```
  
+Inside thumbnailer / views.py we will import the django.views.View class and use it to create HomeView that contains the get and post methods
  
-Dentro de thumbnailer/views.py importaremos la clase django.views.View y lo utilizaremos para crear HomeView que contiene los metodos get y post
- 
-# image_parroter/image_parroter/thumbnailer/views.py
- 
+### image_parroter/image_parroter/thumbnailer/views.py
+```
 import os
  
 from celery import current_app
@@ -291,12 +309,13 @@ class TaskView(View):
             response_data['results'] = task.get()
  
         return JsonResponse(response_data)
+```
  
+Inside thumbernailer we will create the urls.py module
  
-dentro de thumbernailer crearemos el modulo urls.py
- 
-# image_parroter/image_parroter/thumbnailer/urls.py
- 
+### image_parroter/image_parroter/thumbnailer/urls.py
+
+```
 from django.urls import path
  
 from . import views
@@ -305,15 +324,12 @@ urlpatterns = [
   path('', views.HomeView.as_view(), name='home'),
   path('task/<str:task_id>/', views.TaskView.as_view(), name='task'),
 ]
+```
  
- 
- 
- 
- 
- 
-En el modulo urls.py de image_parroter agregaremos las URL del nivel de aplicacion
-# image_parroter/image_parroter/urls.py
- 
+In the urls.py module of image_parroter we will add the application level URLs
+### image_parroter/image_parroter/urls.py
+
+```
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -323,13 +339,15 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('thumbnailer.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+``` 
  
- 
-Creamos un directorio para almacenar la plantilla unica dentro del directorio de miniaturas
+We create a directory to store the unique template within the thumbnail directory
+```
 (venv) $ mkdir -p thumbnailer/templates/thumbnailer
-Dentro de este directorio agregaremos home.html en el cual cargaremos las etiquetas widget_tweaks e importaremos bulma CSS y una biblioteca llamada Axios.js
+```
+Within this directory we will add home.html in which we will load the widget_tweaks tags and import bulma CSS and a library called Axios.js
  
- 
+```
 <!-- image_parroter/image_parroter/thumbnailer/templates/thumbnailer/home.html -->
 {% load widget_tweaks %}
 <!DOCTYPE html>
@@ -441,18 +459,15 @@ Dentro de este directorio agregaremos home.html en el cual cargaremos las etique
 </body>
 </html>
  
- 
- 
- 
- 
- 
-Abriremos otra terminal en el entorno virtual de Python para uniciar el servidor de desarrollo de Django
+```
 
+We will open another terminal in the Python virtual environment to join the Django development server
+```
 (venv) $ python manage.py runserver
-Una vez hecho esto, entraremos a la direccion de nuestro servidor 
+```
+Once this is done, we will enter the address of our server
 http://127.0.0.1:8000/
 
-Buscamos una imagen dentro de nuestra computadora
+We look for an image inside our computer
 
-Nos genera un archivo zip el cual contiene nuestra imagen original y miniatura
-
+It generates a zip file which contains our original and miniature image
